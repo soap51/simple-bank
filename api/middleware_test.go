@@ -8,11 +8,18 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/soap51/simple-bank/token"
 	"github.com/stretchr/testify/require"
+	"github.com/techschool/simplebank/token"
 )
 
-func addAuthorization(t *testing.T, request *http.Request, tokenMaker token.Maker, authorizationType string, username string, duration time.Duration) {
+func addAuthorization(
+	t *testing.T,
+	request *http.Request,
+	tokenMaker token.Maker,
+	authorizationType string,
+	username string,
+	duration time.Duration,
+) {
 	token, err := tokenMaker.CreateToken(username, duration)
 	require.NoError(t, err)
 
@@ -22,16 +29,16 @@ func addAuthorization(t *testing.T, request *http.Request, tokenMaker token.Make
 
 func TestAuthMiddleware(t *testing.T) {
 	testCases := []struct {
-		name         string
-		setupAuth    func(t *testing.T, request *http.Request, tokenMaker token.Maker)
-		checkReponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+		name          string
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, "user", time.Minute)
 			},
-			checkReponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
@@ -39,7 +46,7 @@ func TestAuthMiddleware(t *testing.T) {
 			name: "NoAuthorization",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 			},
-			checkReponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
@@ -47,9 +54,8 @@ func TestAuthMiddleware(t *testing.T) {
 			name: "UnsupportedAuthorization",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, "unsupported", "user", time.Minute)
-
 			},
-			checkReponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
@@ -57,9 +63,8 @@ func TestAuthMiddleware(t *testing.T) {
 			name: "InvalidAuthorizationFormat",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, "", "user", time.Minute)
-
 			},
-			checkReponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
@@ -68,7 +73,7 @@ func TestAuthMiddleware(t *testing.T) {
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, "user", -time.Minute)
 			},
-			checkReponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
@@ -76,15 +81,15 @@ func TestAuthMiddleware(t *testing.T) {
 
 	for i := range testCases {
 		tc := testCases[i]
-		t.Run(tc.name, func(t *testing.T) {
-			server := NewTestServer(t, nil)
 
+		t.Run(tc.name, func(t *testing.T) {
+			server := newTestServer(t, nil)
 			authPath := "/auth"
 			server.router.GET(
 				authPath,
 				authMiddleware(server.tokenMaker),
-				func(c *gin.Context) {
-					c.JSON(http.StatusOK, gin.H{})
+				func(ctx *gin.Context) {
+					ctx.JSON(http.StatusOK, gin.H{})
 				},
 			)
 
@@ -94,7 +99,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
-			tc.checkReponse(t, recorder)
+			tc.checkResponse(t, recorder)
 		})
 	}
 }

@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang-jwt/jwt"
-	"github.com/soap51/simple-bank/util"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/stretchr/testify/require"
+	"github.com/techschool/simplebank/util"
 )
 
 func TestJWTMaker(t *testing.T) {
@@ -25,12 +25,12 @@ func TestJWTMaker(t *testing.T) {
 
 	payload, err := maker.VerifyToken(token)
 	require.NoError(t, err)
-	require.NotEmpty(t, payload)
+	require.NotEmpty(t, token)
 
 	require.NotZero(t, payload.ID)
 	require.Equal(t, username, payload.Username)
 	require.WithinDuration(t, issuedAt, payload.IssuedAt, time.Second)
-	require.WithinDuration(t, expiredAt, payload.ExpireAt, time.Second)
+	require.WithinDuration(t, expiredAt, payload.ExpiredAt, time.Second)
 }
 
 func TestExpiredJWTToken(t *testing.T) {

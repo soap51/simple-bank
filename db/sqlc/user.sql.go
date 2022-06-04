@@ -9,12 +9,12 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
-    username, 
-    hashed_password,
-    full_name,
-    email
+  username,
+  hashed_password,
+  full_name,
+  email
 ) VALUES (
-    $1, $2, $3, $4
+  $1, $2, $3, $4
 ) RETURNING username, hashed_password, full_name, email, password_changed_at, created_at
 `
 
@@ -25,14 +25,14 @@ type CreateUserParams struct {
 	Email          string `json:"email"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (Users, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.Username,
 		arg.HashedPassword,
 		arg.FullName,
 		arg.Email,
 	)
-	var i Users
+	var i User
 	err := row.Scan(
 		&i.Username,
 		&i.HashedPassword,
@@ -49,9 +49,9 @@ SELECT username, hashed_password, full_name, email, password_changed_at, created
 WHERE username = $1 LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, username string) (Users, error) {
+func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, username)
-	var i Users
+	var i User
 	err := row.Scan(
 		&i.Username,
 		&i.HashedPassword,
